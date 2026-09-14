@@ -1,25 +1,39 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { auth } from '$lib/stores/auth';
+	import {
+		LayoutDashboard,
+		AlertTriangle,
+		ShieldCheck,
+		ClipboardCheck,
+		FileText,
+		Siren,
+		CheckSquare,
+		Users,
+		FileSpreadsheet,
+		Settings,
+		Shield
+	} from '@lucide/svelte';
 
 	const navItems = [
-		{ label: 'Tableau de bord', href: '/', icon: '📊' },
-		{ label: 'Gestion des Risques', href: '/risks', icon: '⚠️' },
-		{ label: 'Conformité & Normes', href: '/compliance', icon: '📜' },
-		{ label: 'Contrôles & Audit', href: '/audit', icon: '🛡️' },
-		{ label: 'Politiques & Docs', href: '/policies', icon: '📁' },
-		{ label: 'Gestion des Incidents', href: '/incidents', icon: '🚨' },
-		{ label: 'Évaluations en ligne', href: '/evaluations', icon: '📝' },
-		{ label: 'Gestion des Tiers', href: '/third-parties', icon: '🤝' },
-		{ label: 'Rapports & Exports', href: '/reports', icon: '📄' },
-		{ label: 'Administration & Logs', href: '/settings', icon: '⚙️' }
+		{ label: 'Tableau de bord', href: '/', icon: LayoutDashboard },
+		{ label: 'Gestion des Risques', href: '/risks', icon: AlertTriangle },
+		{ label: 'Conformité & Normes', href: '/compliance', icon: ShieldCheck },
+		{ label: 'Contrôles & Audit', href: '/audit', icon: ClipboardCheck },
+		{ label: 'Politiques & Docs', href: '/policies', icon: FileText },
+		{ label: 'Gestion des Incidents', href: '/incidents', icon: Siren },
+		{ label: 'Évaluations en ligne', href: '/evaluations', icon: CheckSquare },
+		{ label: 'Gestion des Tiers', href: '/third-parties', icon: Users },
+		{ label: 'Rapports & Exports', href: '/reports', icon: FileSpreadsheet },
+		{ label: 'Administration & Logs', href: '/settings', icon: Settings }
 	];
 </script>
 
 <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
 	<div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950/40">
 		<span class="text-xl font-black tracking-tight text-white flex items-center gap-2">
-			<span class="text-teal-400">🛡️</span> Wetchah<span class="text-teal-400 font-normal">GRC</span>
+			<Shield class="w-6 h-6 text-teal-400" />
+			<span>Wetchah<span class="text-teal-400 font-normal">GRC</span></span>
 		</span>
 	</div>
 
@@ -31,11 +45,12 @@
 	<nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
 		{#each navItems as item}
 			{@const active = $page.url.pathname === item.href || (item.href !== '/' && $page.url.pathname.startsWith(item.href))}
+			{@const Icon = item.icon}
 			<a
 				href={item.href}
 				class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {active ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'}"
 			>
-				<span class="text-base">{item.icon}</span>
+				<svelte:component this={Icon} class="w-4 h-4 shrink-0" />
 				<span>{item.label}</span>
 			</a>
 		{/each}

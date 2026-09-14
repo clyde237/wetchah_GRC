@@ -3,6 +3,15 @@
 	import { apiRequest } from '$lib/api';
 	import StatCard from '$lib/components/StatCard.svelte';
 	import Heatmap from '$lib/components/Heatmap.svelte';
+	import {
+		AlertTriangle,
+		ShieldCheck,
+		ShieldAlert,
+		Siren,
+		Clock,
+		FileDown,
+		Zap
+	} from '@lucide/svelte';
 
 	let loading = true;
 	let data: any = null;
@@ -32,7 +41,7 @@
 		</div>
 		<div class="flex items-center gap-2">
 			<a href="/reports" class="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2">
-				<span>📄</span>
+				<FileDown class="w-4 h-4" />
 				<span>Générer un Rapport d'Audit (PDF)</span>
 			</a>
 		</div>
@@ -51,34 +60,34 @@
 				title="Risques Critiques"
 				value={data.critical_risks}
 				subtitle={data.critical_risks > 0 ? 'Action prioritaire requise' : 'Aucun risque critique'}
-				icon="⚠️"
+				icon={AlertTriangle}
 				alert={data.critical_risks > 0}
 			/>
 			<StatCard
 				title="Taux de Conformité"
 				value="{data.overall_compliance_rate}%"
 				subtitle="Standards ISO & OHADA"
-				icon="📜"
+				icon={ShieldCheck}
 			/>
 			<StatCard
 				title="Contrôles Échoués"
 				value={data.failed_controls}
 				subtitle="Sur {data.active_controls} contrôles actifs"
-				icon="🛡️"
+				icon={ShieldAlert}
 				alert={data.failed_controls > 0}
 			/>
 			<StatCard
 				title="Incidents en Cours"
 				value={data.open_incidents}
 				subtitle="En cours de qualification"
-				icon="🚨"
+				icon={Siren}
 				alert={data.open_incidents > 0}
 			/>
 			<StatCard
 				title="Plans d'Action en Retard"
 				value={data.delayed_action_plans}
 				subtitle="Sur {data.active_action_plans} actions actives"
-				icon="⏳"
+				icon={Clock}
 				alert={data.delayed_action_plans > 0}
 			/>
 		</div>
