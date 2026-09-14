@@ -7,14 +7,16 @@ services:
       dockerfile: Dockerfile
     container_name: wetchah-grc-standalone
     ports:
-      - "8000:8000"
+      - "${PORT:-8085}:8000"
     environment:
       - SECRET_KEY=wetchah_dev_secret_key_grc_2026
       - DATABASE_URL=sqlite:////data/grc.db
       - TENANT_SLUG=demo
       - TENANT_NAME=Hôtel Résidence Villa Boutanga
-      - ERP_API_URL=http://localhost:8001
-      - REPORTING_SECRET=test_reporting_secret
+      - ERP_API_URL=http://host.docker.internal:8081
+      - REPORTING_SECRET=4a6f9c8e1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - grc_data:/data
     restart: unless-stopped

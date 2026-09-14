@@ -51,6 +51,52 @@ def create_user(
     )
     return user
 
+@router.post("/provision-from-erp", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def provision_from_erp(
+    user_in: UserCreate,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token de service manquant")
+    token = auth_header.split(" ")[1]
+    from app.core.config import settings
+    if token != settings.REPORTING_SECRET:
+        raise HTTPException(status_code=403, detail="Secret de reporting ERP invalide")
+
+    user = db.query(User).filter(User.email == user_in.email).first()
+    if user:
+        user.hashed_password = get_password_hash(user_in.password)
+        user.full_name = user_in.full_name
+        user.role = user_in.role or "controller"
+        user.is_active = True
+    else:
+        user = User(
+            email=user_in.email,
+            hashed_password=get_password_hash(user_in.password),
+            full_name=user_in.full_name,
+            role=user_in.role or "controller",
+            department=user_in.department or "Contrôle de Gestion & Finance",
+            phone=user_in.phone,
+            is_active=True
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+
+    record_activity(
+        db=db,
+        user=user,
+        action="PROVISION_ERP",
+        resource_type="USER",
+        resource_id=str(user.id),
+        details=f"Provisioning automatique depuis Wetchah ERP ({user.email})",
+        ip_address=request.client.host if request.client else None
+    )
+    return user
+
 @router.get("/logs", response_model=List[ActivityLogOut])
 def list_activity_logs(
     limit: int = 100,
