@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  grc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wetchah-grc-standalone
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=wetchah_dev_secret_key_grc_2026
+      - DATABASE_URL=sqlite:////data/grc.db
+      - TENANT_SLUG=demo
+      - TENANT_NAME=Hôtel Résidence Villa Boutanga
+      - ERP_API_URL=http://localhost:8001
+      - REPORTING_SECRET=test_reporting_secret
+    volumes:
+      - grc_data:/data
+    restart: unless-stopped
+
+volumes:
+  grc_data:
