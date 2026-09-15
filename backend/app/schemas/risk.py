@@ -1,6 +1,14 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+# La matrice de risque est une grille 5x5 : une note hors de cet intervalle
+# produit un score aberrant et, surtout, fait disparaître le risque de la
+# heatmap — la case correspondante n'existe pas. Le risque reste alors en tête
+# du classement sans apparaître nulle part.
+def note(defaut):
+    """Note de 1 à 5, avec sa valeur par défaut d'origine préservée."""
+    return Field(defaut, ge=1, le=5)
 
 class RiskBase(BaseModel):
     code: str
@@ -12,10 +20,10 @@ class RiskBase(BaseModel):
     third_party_id: Optional[int] = None
     owner_id: Optional[int] = None
     status: str = "identifie"
-    gross_impact: int = 3
-    gross_likelihood: int = 3
-    residual_impact: int = 2
-    residual_likelihood: int = 2
+    gross_impact: int = note(3)
+    gross_likelihood: int = note(3)
+    residual_impact: int = note(2)
+    residual_likelihood: int = note(2)
     treatment_strategy: str = "reduire"
     treatment_plan: Optional[str] = None
     review_frequency_days: int = 90
@@ -33,10 +41,10 @@ class RiskUpdate(BaseModel):
     third_party_id: Optional[int] = None
     owner_id: Optional[int] = None
     status: Optional[str] = None
-    gross_impact: Optional[int] = None
-    gross_likelihood: Optional[int] = None
-    residual_impact: Optional[int] = None
-    residual_likelihood: Optional[int] = None
+    gross_impact: Optional[int] = note(None)
+    gross_likelihood: Optional[int] = note(None)
+    residual_impact: Optional[int] = note(None)
+    residual_likelihood: Optional[int] = note(None)
     treatment_strategy: Optional[str] = None
     treatment_plan: Optional[str] = None
     review_frequency_days: Optional[int] = None
