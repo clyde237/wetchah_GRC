@@ -120,3 +120,81 @@ def test_tout_risque_du_registre_tient_dans_la_matrice(client, admin):
 
     for r in risques:
         assert f"{r['residual_impact']}_{r['residual_likelihood']}" in cases, r["code"]
+
+
+# ── Provisioning depuis l'ERP ──────────────────────────────────────────────
+
+def test_le_provisioning_refuse_un_jeton_vide(client, monkeypatch):
+    """
+    La garde comparait le jeton reçu au secret de service. Avec un secret non
+    configuré — les deux chaînes vides —, « Authorization: Bearer » suffisait
+    à se créer un compte. On refuse désormais l'opération plutôt que de
+    l'ouvrir.
+    """
+    from app.core import config
+
+    monkeypatch.setattr(config.settings, "REPORTING_SECRET", "", raising=False)
+
+    reponse = client.post(
+        "/api/v1/users/provision-from-erp",
+        headers={"Authorization": "Bearer "},
+        json={"email": "intrus@exemple.test", "password": "x", "full_name": "Intrus"},
+    )
+
+    assert reponse.status_code == 503
+
+
+def test_le_provisioning_refuse_un_mauvais_secret(client, monkeypatch):
+    from app.core import config
+
+    monkeypatch.setattr(config.settings, "REPORTING_SECRET", "le-bon-secret", raising=False)
+
+    reponse = client.post(
+        "/api/v1/users/provision-from-erp",
+        headers={"Authorization": "Bearer mauvais"},
+        json={"email": "intrus@exemple.test", "password": "x", "full_name": "Intrus"},
+    )
+
+    assert reponse.status_code == 403
+
+
+def test_le_provisioning_accepte_le_bon_secret(client, monkeypatch):
+    from app.core import config
+
+    monkeypatch.setattr(config.settings, "REPORTING_SECRET", "le-bon-secret", raising=False)
+
+    reponse = client.post(
+        "/api/v1/users/provision-from-erp",
+        headers={"Authorization": "Bearer le-bon-secret"},
+        json={
+            "email": "controleur@exemple.test",
+            "password": "motdepasse",
+            "full_name": "Contrôleur de gestion",
+            "role": "controller",
+        },
+    )
+
+    assert reponse.status_code == 201, reponse.text
+    assert reponse.json()["role"] == "controller"
+
+
+# ── Identité affichée dans l'en-tête ───────────────────────────────────────
+
+def test_health_porte_le_nom_de_l_etablissement(client):
+    """L'en-tête y lit le nom de l'établissement sur lequel le module tourne."""
+    corps = client.get("/health").json()
+
+    assert "tenant_name" in corps
+    assert corps["tenant_slug"]
+
+
+def test_l_etat_de_la_liaison_pms_est_rapporte(client, admin):
+    """
+    L'en-tête affichait « Liaison PMS Active » en dur. Sans secret de
+    reporting, l'état doit dire que la liaison n'est pas établie.
+    """
+    etat = client.get("/api/v1/dashboard/pms", headers=admin).json()
+
+    assert etat["available"] is False
+    assert etat["reason"] == "not_configured"
+    assert etat["error"]

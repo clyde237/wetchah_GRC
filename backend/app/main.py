@@ -74,6 +74,7 @@ def health_check():
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "tenant_slug": settings.TENANT_SLUG,
+        "tenant_name": settings.TENANT_NAME,
         "version": settings.VERSION
     }
 
