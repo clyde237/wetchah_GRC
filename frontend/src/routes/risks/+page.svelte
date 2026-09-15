@@ -1,6 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiRequest } from '$lib/api';
+	import { apiRequest, apiDownload } from '$lib/api';
+
+	let exporting = false;
+	let exportError = '';
+
+	async function exportExcel() {
+		exporting = true;
+		exportError = '';
+		try {
+			await apiDownload('/reports/risks/excel', 'REGISTRE_RISQUES_WETCHAH_GRC.xlsx');
+		} catch (e: any) {
+			exportError = e.message || "L'export a échoué.";
+		} finally {
+			exporting = false;
+		}
+	}
 
 	let risks: any[] = [];
 	let loading = true;
@@ -47,16 +62,25 @@
 </script>
 
 <div class="space-y-6">
+	{#if exportError}
+		<div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-800">
+			{exportError}
+		</div>
+	{/if}
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-black text-slate-900 tracking-tight">Registre des Risques (Module 1)</h1>
 			<p class="text-xs text-slate-500 mt-1">Identification, évaluation brute & résiduelle et plans de traitement (RIS-01 à RIS-08).</p>
 		</div>
 		<div class="flex items-center gap-2">
-			<a href="/api/v1/reports/risks/excel" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2">
+			<button
+				on:click={exportExcel}
+				disabled={exporting}
+				class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+			>
 				<span>📊</span>
-				<span>Exporter Excel</span>
-			</a>
+				<span>{exporting ? 'Export en cours…' : 'Exporter Excel'}</span>
+			</button>
 			<button on:click={() => showModal = true} class="px-3.5 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2">
 				<span>➕</span>
 				<span>Nouveau Risque</span>
