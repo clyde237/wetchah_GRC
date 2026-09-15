@@ -14,9 +14,12 @@ import pytest
 
 @pytest.fixture(scope="module")
 def mission(client, admin):
-    """Le seed ne crée aucune mission : le PDF a besoin d'une matière réelle."""
+    """
+    Mission propre au test plutôt que celle du seed : le contenu du jeu de
+    démonstration peut évoluer, ces assertions ne doivent pas en dépendre.
+    """
     mission = client.post("/api/v1/audit/missions", headers=admin, json={
-        "reference": "AUD-2026-Q3",
+        "reference": "AUD-TEST-2026",
         "title": "Audit du cycle caisse",
         "scope": "Réception et restaurant, juillet à septembre.",
         "start_date": "2026-07-01T08:00:00",
