@@ -92,38 +92,65 @@
 			/>
 		</div>
 
-		<!-- Cartouche d'intégration temps réel avec wetchah_app -->
+		<!-- Cartouche d'intégration temps réel avec wetchah_app.
+		     Aucun chiffre n'est affiché tant que le PMS n'a pas répondu : un
+		     tableau de bord d'audit ne doit jamais présenter de valeur dont
+		     l'origine n'est pas établie. -->
 		{#if data.wetchah_financial_summary}
 			{@const fin = data.wetchah_financial_summary}
-			<div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md border border-slate-700">
-				<div class="flex items-center justify-between mb-3 border-b border-slate-700/60 pb-3">
-					<div class="flex items-center gap-2">
-						<span class="text-teal-400 text-lg">⚡</span>
-						<span class="text-xs font-black uppercase tracking-wider text-teal-400">Flux Opérationnel PMS Consommé (wetchah_app)</span>
+			{#if fin.available}
+				<div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md border border-slate-700">
+					<div class="flex items-center justify-between mb-3 border-b border-slate-700/60 pb-3">
+						<div class="flex items-center gap-2">
+							<span class="text-teal-400 text-lg">⚡</span>
+							<span class="text-xs font-black uppercase tracking-wider text-teal-400">Flux Opérationnel PMS Consommé (wetchah_app)</span>
+						</div>
+						<span class="text-[11px] text-slate-400 font-mono">
+							Lu sur l'API PMS{fin.fetched_at ? ` — ${new Date(fin.fetched_at).toLocaleString('fr-FR')}` : ''}
+						</span>
 					</div>
-					<span class="text-[11px] text-slate-400 font-mono">Données via API PMS sécurisée</span>
-				</div>
-				<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-					<div>
-						<div class="text-[11px] text-slate-400 font-medium">Recettes du Jour</div>
-						<div class="text-xl font-black text-white mt-0.5">{formatCurrency(fin.today_revenue || 0)}</div>
-					</div>
-					<div>
-						<div class="text-[11px] text-slate-400 font-medium">Taux d'Occupation Hôtel</div>
-						<div class="text-xl font-black text-teal-300 mt-0.5">{fin.occupancy_rate || 0}%</div>
-					</div>
-					<div>
-						<div class="text-[11px] text-slate-400 font-medium">Sessions Caisse Ouvertes</div>
-						<div class="text-xl font-black text-white mt-0.5">{fin.open_cash_sessions || 0} caisse(s)</div>
-					</div>
-					<div>
-						<div class="text-[11px] text-slate-400 font-medium">Écarts Caisse Détectés</div>
-						<div class="text-xl font-black {fin.cash_discrepancies_count > 0 ? 'text-rose-400' : 'text-emerald-400'} mt-0.5">
-							{fin.cash_discrepancies_count || 0} anomalie(s)
+					<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+						<div>
+							<div class="text-[11px] text-slate-400 font-medium">Recettes du Jour</div>
+							<div class="text-xl font-black text-white mt-0.5">{formatCurrency(fin.today_revenue ?? 0)}</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-slate-400 font-medium">Taux d'Occupation Hôtel</div>
+							<div class="text-xl font-black text-teal-300 mt-0.5">{fin.occupancy_rate ?? 0}%</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-slate-400 font-medium">Sessions Caisse Ouvertes</div>
+							<div class="text-xl font-black text-white mt-0.5">{fin.open_cash_sessions ?? 0} caisse(s)</div>
+						</div>
+						<div>
+							<div class="text-[11px] text-slate-400 font-medium">Écarts Caisse Détectés</div>
+							<div class="text-xl font-black {fin.cash_discrepancies_count > 0 ? 'text-rose-400' : 'text-emerald-400'} mt-0.5">
+								{fin.cash_discrepancies_count ?? 0} anomalie(s)
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			{:else}
+				<div class="bg-amber-50 border border-amber-300 p-5 rounded-2xl shadow-sm">
+					<div class="flex items-start gap-3">
+						<span class="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
+						<div class="flex-1">
+							<div class="text-xs font-black uppercase tracking-wider text-amber-700">
+								Flux opérationnel PMS indisponible
+							</div>
+							<p class="text-sm text-amber-900 mt-1">
+								{fin.error || "Le PMS n'a pas pu être interrogé."}
+							</p>
+							<p class="text-[11px] text-amber-700/80 mt-2">
+								Aucune donnée financière n'est affichée : les indicateurs de risque,
+								de conformité et d'audit ci-dessus restent valides, mais les chiffres
+								d'exploitation ne peuvent pas être attestés tant que la liaison n'est
+								pas rétablie.
+							</p>
+						</div>
+					</div>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Matrice 5x5 et Top Risques -->
