@@ -9,16 +9,23 @@
 
 	let isLoaded = false;
 
+	// Pages accessibles sans compte GRC : l'écran de connexion, et le
+	// formulaire d'évaluation ouvert aux répondants externes, dont le jeton
+	// dans l'URL tient lieu d'autorisation.
+	const PUBLIC_PATHS = ['/login', '/respond'];
+
 	onMount(() => {
 		const token = localStorage.getItem('grc_token');
-		if (!token && !$page.url.pathname.startsWith('/login')) {
+		if (!token && !PUBLIC_PATHS.some((p) => $page.url.pathname.startsWith(p))) {
 			goto('/login');
 		}
 		isLoaded = true;
 	});
 </script>
 
-{#if $page.url.pathname.startsWith('/login')}
+{#if $page.url.pathname.startsWith('/respond')}
+	<slot />
+{:else if $page.url.pathname.startsWith('/login')}
 	<main class="h-full w-full bg-slate-900 flex items-center justify-center p-4">
 		<slot />
 	</main>
