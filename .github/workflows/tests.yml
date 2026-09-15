@@ -1,0 +1,71 @@
+name: Tests
+
+# Exécuté sur toutes les branches et sur chaque demande de fusion : une
+# régression doit se voir avant la fusion, pas après la publication d'image.
+on:
+  # main est déjà couvert par build-image.yml, qui appelle ce workflow avant
+  # de publier : l'exclure ici évite de faire tourner la suite deux fois.
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_call:      # appelé par build-image.yml, qui refuse de publier si ceci échoue
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          # L'application refuse de démarrer sans clé de signature propre.
+          # Celle-ci ne vaut que pour la durée du job.
+          SECRET_KEY: ci-only-not-a-real-key-0000000000000000
+          # Vide à dessein : le connecteur doit répondre « non configuré »
+          # plutôt que d'aller chercher un PMS absent de l'environnement de CI.
+          REPORTING_SECRET: ''
+        run: python -m pytest tests/ -v
+
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # Le frontend n'a pas encore de tests : la compilation reste le seul
+      # garde-fou contre une erreur de syntaxe ou un import cassé qui ne se
+      # verrait qu'au build de l'image.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
