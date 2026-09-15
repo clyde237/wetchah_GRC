@@ -37,14 +37,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configuration CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configuration CORS.
+# Le frontend est servi par ce même service (montage statique plus bas) et le
+# serveur de développement Vite proxifie /api : dans les deux cas le navigateur
+# reste en même origine, donc aucune règle CORS n'est nécessaire. On n'active
+# le middleware que si des origines tierces ont été explicitement déclarées.
+# « * » et allow_credentials=True sont incompatibles (les navigateurs rejettent
+# la combinaison) : on ne transmet les cookies que pour des origines nommées.
+if settings.CORS_ORIGINS:
+    wildcard = "*" in settings.CORS_ORIGINS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=not wildcard,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Inclusion des Routers API v1
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentification"])
