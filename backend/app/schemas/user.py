@@ -22,6 +22,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+    # Renseignée par l'ERP quand l'adresse du compte a changé : sans elle, le
+    # provisioning créerait un second compte et laisserait l'ancien ouvrir
+    # encore le portail.
+    previous_email: Optional[str] = None
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[str] = None

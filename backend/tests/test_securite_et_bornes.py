@@ -198,3 +198,38 @@ def test_l_etat_de_la_liaison_pms_est_rapporte(client, admin):
     assert etat["available"] is False
     assert etat["reason"] == "not_configured"
     assert etat["error"]
+
+
+def test_un_changement_d_adresse_renomme_au_lieu_de_dupliquer(client, monkeypatch):
+    """
+    Quand l'ERP change l'adresse d'un contrôleur, il transmet l'ancienne. Sans
+    elle, le provisioning créerait un second compte et l'ancienne adresse
+    continuerait d'ouvrir le portail.
+    """
+    from app.core import config
+
+    monkeypatch.setattr(config.settings, "REPORTING_SECRET", "le-bon-secret", raising=False)
+    entete = {"Authorization": "Bearer le-bon-secret"}
+
+    client.post("/api/v1/users/provision-from-erp", headers=entete, json={
+        "email": "ancienne@exemple.test", "password": "p", "full_name": "Paul Atangana",
+    })
+
+    renomme = client.post("/api/v1/users/provision-from-erp", headers=entete, json={
+        "email": "nouvelle@exemple.test",
+        "previous_email": "ancienne@exemple.test",
+        "password": "p2",
+        "full_name": "Paul Atangana",
+    })
+
+    assert renomme.status_code == 201, renomme.text
+
+    adresses = [u["email"] for u in client.get("/api/v1/users/", headers=_admin_entete(client)).json()]
+    assert "nouvelle@exemple.test" in adresses
+    assert "ancienne@exemple.test" not in adresses
+
+
+def _admin_entete(client) -> dict:
+    reponse = client.post("/api/v1/auth/login",
+                          json={"email": "admin@wetchah.local", "password": "admin1234"})
+    return {"Authorization": f"Bearer {reponse.json()['access_token']}"}

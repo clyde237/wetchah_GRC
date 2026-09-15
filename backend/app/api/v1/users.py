@@ -82,6 +82,14 @@ def provision_from_erp(
         raise HTTPException(status_code=403, detail="Secret de reporting ERP invalide")
 
     user = db.query(User).filter(User.email == user_in.email).first()
+
+    # L'adresse a changé côté ERP : on renomme le compte existant plutôt que
+    # d'en créer un second, qui laisserait l'ancienne adresse ouvrir le portail.
+    if not user and user_in.previous_email:
+        user = db.query(User).filter(User.email == user_in.previous_email.strip().lower()).first()
+        if user:
+            user.email = user_in.email
+
     if user:
         user.hashed_password = get_password_hash(user_in.password)
         user.full_name = user_in.full_name
