@@ -95,3 +95,24 @@ async def get_dashboard_metrics(
         heatmap=heatmap_data,
         wetchah_financial_summary=financial_data
     )
+
+
+@router.get("/pms")
+async def get_pms_link_status(current_user: User = Depends(get_current_user)):
+    """
+    État de la liaison avec le PMS, seul.
+
+    L'en-tête affichait « Liaison PMS Active » sans rien vérifier. Cette
+    affirmation valait aussi bien quand le PMS répondait que lorsqu'il était
+    injoignable — le même travers que les chiffres de repli supprimés du
+    connecteur. Ce point d'entrée ne fait qu'un appel, là où interroger le
+    tableau de bord complet aurait rejoué toutes ses agrégations.
+    """
+    etat = await wetchah_connector.get_financial_summary()
+
+    return {
+        "available": etat.get("available", False),
+        "reason": etat.get("reason"),
+        "error": etat.get("error"),
+        "fetched_at": etat.get("fetched_at"),
+    }

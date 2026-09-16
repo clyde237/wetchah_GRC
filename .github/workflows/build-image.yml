@@ -13,7 +13,13 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # Barrière avant publication : une image dont les tests échouent ne doit pas
+  # atteindre le registre, sinon le provisioning la déploiera chez les clients.
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   build-and-push:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

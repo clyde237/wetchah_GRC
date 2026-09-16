@@ -1,6 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiRequest } from '$lib/api';
+	import { apiRequest, apiDownload } from '$lib/api';
+
+	let downloadError = '';
+
+	async function downloadMissionPdf(m: any) {
+		downloadError = '';
+		try {
+			await apiDownload(`/reports/missions/${m.id}/pdf`, `RAPPORT_AUDIT_${m.reference}.pdf`);
+		} catch (e: any) {
+			downloadError = e.message || 'Le téléchargement a échoué.';
+		}
+	}
 
 	let controls: any[] = [];
 	let missions: any[] = [];
@@ -27,6 +38,11 @@
 </script>
 
 <div class="space-y-6">
+	{#if downloadError}
+		<div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-800">
+			{downloadError}
+		</div>
+	{/if}
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-black text-slate-900 tracking-tight">Contrôles Internes & Audit (Module 3)</h1>
@@ -104,9 +120,12 @@
 					<p class="text-xs text-slate-500 mt-1">{m.scope}</p>
 					<div class="mt-4 pt-3 border-t flex items-center justify-between text-xs">
 						<span class="text-slate-400">Du {new Date(m.start_date).toLocaleDateString('fr-FR')} au {new Date(m.end_date).toLocaleDateString('fr-FR')}</span>
-						<a href="/api/v1/reports/missions/{m.id}/pdf" class="font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1">
+						<button
+							on:click={() => downloadMissionPdf(m)}
+							class="font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+						>
 							<span>📄</span> Télécharger PDF
-						</a>
+						</button>
 					</div>
 				</div>
 			{/each}

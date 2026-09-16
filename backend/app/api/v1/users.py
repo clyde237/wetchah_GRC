@@ -1,3 +1,4 @@
+import secrets
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
@@ -57,15 +58,38 @@ def provision_from_erp(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token de service manquant")
-    token = auth_header.split(" ")[1]
+    # Ce point d'entrée crée un compte sans authentification d'utilisateur :
+    # sa seule garde est le secret de service partagé avec l'ERP.
     from app.core.config import settings
-    if token != settings.REPORTING_SECRET:
+
+    secret = settings.REPORTING_SECRET or ""
+    if not secret:
+        # Sans secret configuré, la comparaison plus bas laissait passer un
+        # « Authorization: Bearer » vide — n'importe qui pouvait alors se
+        # créer un compte. On refuse plutôt que d'ouvrir.
+        raise HTTPException(
+            status_code=503,
+            detail="Provisioning indisponible : aucun secret de service n'est configuré.",
+        )
+
+    auth_header = request.headers.get("Authorization") or ""
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token de service manquant")
+
+    # Comparaison à temps constant : une comparaison ordinaire s'arrête au
+    # premier caractère différent et laisse deviner le secret par mesures.
+    if not secrets.compare_digest(auth_header[len("Bearer "):], secret):
         raise HTTPException(status_code=403, detail="Secret de reporting ERP invalide")
 
     user = db.query(User).filter(User.email == user_in.email).first()
+
+    # L'adresse a changé côté ERP : on renomme le compte existant plutôt que
+    # d'en créer un second, qui laisserait l'ancienne adresse ouvrir le portail.
+    if not user and user_in.previous_email:
+        user = db.query(User).filter(User.email == user_in.previous_email.strip().lower()).first()
+        if user:
+            user.email = user_in.email
+
     if user:
         user.hashed_password = get_password_hash(user_in.password)
         user.full_name = user_in.full_name

@@ -249,4 +249,83 @@ def seed_database(db: Session):
             Question(questionnaire_id=q1.id, order_num=3, section="Sécurité", question_text="Les clés passe-partout sont-elles remises sous émargement chaque matin ?", question_type="yes_no", is_risk_trigger=True)
         ])
 
+    # 9. Mission d'audit, constats et plan d'action (Module 3)
+    #
+    # Sans mission initiale, l'écran « Rapports de missions » d'une
+    # installation neuve reste vide : la fonction paraît cassée alors qu'elle
+    # attend seulement une matière. La mission ci-dessous illustre en outre la
+    # chaîne complète mission → constat → plan d'action, dont dépend la
+    # génération du rapport PDF.
+    if not db.query(AuditMission).first():
+        # Les contrôles viennent d'être ajoutés à la session : on force leur
+        # écriture pour pouvoir rattacher les constats à leur identifiant.
+        db.flush()
+
+        auditeur = db.query(User).filter(User.email == "auditor@wetchah.local").first()
+        controleur = db.query(User).filter(User.email == "controller@wetchah.local").first()
+        ctrl_caisse = db.query(InternalControl).filter(InternalControl.code == "CTRL-CAISSE-01").first()
+        ctrl_sys = db.query(InternalControl).filter(InternalControl.code == "CTRL-SYS-02").first()
+
+        mission = AuditMission(
+            reference="AUD-2026-Q3",
+            title="Audit du cycle caisse et des accès applicatifs",
+            scope="Réception, restaurant et boutique — période du 1er juillet au 30 septembre 2026. "
+                  "Revue des sessions de caisse, des écarts constatés et des habilitations PMS.",
+            lead_auditor_id=auditeur.id if auditeur else None,
+            start_date=datetime.now(timezone.utc) - timedelta(days=45),
+            end_date=datetime.now(timezone.utc) - timedelta(days=5),
+            status="terminee",
+            summary_notes="Le dispositif de caisse est en place et globalement appliqué. "
+                          "Deux faiblesses persistent : l'absence de comptage contradictoire "
+                          "en fin de service et le maintien de comptes d'anciens employés."
+        )
+        db.add(mission)
+        db.flush()
+
+        constat1 = AuditFinding(
+            mission_id=mission.id,
+            code="CONST-01",
+            title="Comptage de caisse non contradictoire",
+            description="Sur les 12 clôtures examinées, 9 ont été réalisées par un agent seul, "
+                        "sans contre-comptage ni visa d'un second intervenant.",
+            severity="eleve",
+            control_id=ctrl_caisse.id if ctrl_caisse else None,
+            recommendation="Instaurer un double comptage systématique en fin de service, "
+                           "matérialisé par la signature des deux agents sur le bordereau de clôture."
+        )
+        constat2 = AuditFinding(
+            mission_id=mission.id,
+            code="CONST-02",
+            title="Comptes applicatifs d'employés sortis toujours actifs",
+            description="Trois comptes PMS appartenant à des employés ayant quitté l'établissement "
+                        "depuis plus de deux mois étaient encore actifs à la date de l'audit.",
+            severity="critique",
+            control_id=ctrl_sys.id if ctrl_sys else None,
+            recommendation="Rattacher la révocation des accès à la procédure de sortie du personnel "
+                           "et contrôler mensuellement l'écart entre effectif réel et comptes actifs."
+        )
+        db.add_all([constat1, constat2])
+        db.flush()
+
+        db.add_all([
+            ActionPlan(
+                finding_id=constat1.id,
+                title="Déployer le bordereau de clôture contradictoire",
+                description="Rédiger le bordereau, former les chefs de service et rendre la double "
+                            "signature obligatoire avant remise des fonds.",
+                assignee_id=controleur.id if controleur else None,
+                due_date=datetime.now(timezone.utc) + timedelta(days=30),
+                status="en_cours"
+            ),
+            ActionPlan(
+                finding_id=constat2.id,
+                title="Revue et purge des comptes applicatifs",
+                description="Recenser les comptes actifs, les confronter à l'effectif réel, "
+                            "désactiver les comptes orphelins et consigner l'opération.",
+                assignee_id=controleur.id if controleur else None,
+                due_date=datetime.now(timezone.utc) - timedelta(days=3),
+                status="en_cours"   # échue : alimente le compteur d'actions en retard
+            ),
+        ])
+
     db.commit()

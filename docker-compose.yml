@@ -8,13 +8,18 @@ services:
     container_name: wetchah-grc-standalone
     ports:
       - "${PORT:-8085}:8000"
+    # Les deux secrets sont lus depuis le .env local (non versionné), jamais
+    # écrits ici : ce fichier est suivi par git, toute valeur en dur devient
+    # publique. La syntaxe ${VAR:?message} fait échouer `docker compose up`
+    # avec un message clair si la variable manque, plutôt que de démarrer avec
+    # une clé connue de tous.
     environment:
-      - SECRET_KEY=wetchah_dev_secret_key_grc_2026
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY manquante — ajoutez une clé aléatoire dans wetchah_GRC/.env (voir .env.example)}
       - DATABASE_URL=sqlite:////data/grc.db
       - TENANT_SLUG=demo
       - TENANT_NAME=Hôtel Résidence Villa Boutanga
       - ERP_API_URL=http://host.docker.internal:8081
-      - REPORTING_SECRET=4a6f9c8e1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f
+      - REPORTING_SECRET=${REPORTING_SECRET:?REPORTING_SECRET manquant — reprenez la valeur configurée côté wetchah_erp}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

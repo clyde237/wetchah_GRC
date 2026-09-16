@@ -32,6 +32,43 @@ class PolicyOut(PolicyBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    version_count: int = 0
+    acknowledgment_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class PolicyVersionCreate(BaseModel):
+    version_number: str
+    change_summary: str
+    approve: bool = False  # marque la version comme approuvée par l'auteur de l'appel
+
+
+class PolicyVersionOut(BaseModel):
+    id: int
+    policy_id: int
+    version_number: str
+    change_summary: str
+    approved_by: Optional[int] = None
+    approved_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PolicyAcknowledgmentOut(BaseModel):
+    id: int
+    user_id: int
+    user_name: Optional[str] = None
+    acknowledged_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PolicyDetailOut(PolicyOut):
+    versions: List[PolicyVersionOut] = []
+    acknowledged_by_me: bool = False
+    allowed_transitions: List[str] = []
