@@ -38,12 +38,11 @@ def test_aucune_sortie_du_dossier_statique(client, chemin):
 
 
 def test_la_racine_sert_toujours_la_spa(client):
+    """La racine rend l'index, jamais une erreur ni un fichier du serveur."""
     reponse = client.get("/")
 
     assert reponse.status_code == 200
-    # Le dossier statique n'existe pas en environnement de test : l'API répond
-    # quand même sans erreur serveur, ce qui suffit à valider le routage.
-    assert reponse.status_code < 500
+    assert b"<title>" in reponse.content
 
 
 # ── Bornes des notes de risque ─────────────────────────────────────────────

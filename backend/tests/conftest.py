@@ -21,6 +21,18 @@ os.environ["DATABASE_URL"] = "sqlite:///" + str(Path(tempfile.mkdtemp()) / "test
 # chercher un PMS qui n'existe pas dans un environnement de test.
 os.environ["REPORTING_SECRET"] = ""
 
+# La SPA compilée (backend/static/) n'est pas versionnée : elle est produite
+# par le build de l'image. Sans elle, app.main n'enregistre pas du tout la
+# route de service des fichiers — et le test de traversée de répertoire
+# passait pour un simple 404, sans jamais atteindre le garde-fou qu'il est
+# censé vérifier. On pose donc un squelette minimal quand il manque, pour que
+# la CI exerce le même chemin de code que la production.
+_STATIC = BACKEND_ROOT / "static"
+(_STATIC / "_app").mkdir(parents=True, exist_ok=True)
+_INDEX = _STATIC / "index.html"
+if not _INDEX.exists():
+    _INDEX.write_text("<!doctype html><title>SPA de test</title>", encoding="utf-8")
+
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
